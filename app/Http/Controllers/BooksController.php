@@ -18,6 +18,8 @@ class BooksController extends Controller
 
     public function index2()
     {
+            // Ensure books are retrieved with the borrow relationship
+        $books = Books::with('borrow')->paginate(10); 
         return view('bookManage.displayBooks');
     }
 
@@ -34,6 +36,13 @@ class BooksController extends Controller
         return view('books.mainborrow', compact('books'));
     }
 
+       /* public function display()
+    {
+        // Ensure books are retrieved with the borrow relationship
+        $books = Books::with('borrow')->paginate(10); 
+
+        return view('bookManage.displayBooks', compact('books')); // Pass books to view
+    }*/
 
     public function create(){
         return view('bookManage.addBooks');
@@ -67,28 +76,28 @@ class BooksController extends Controller
             return view('bookManage.viewBooks', compact('book')); // Pass to view
         }
 
-        public function update(Request $request, $id)
-        {
-            $book = Books::findOrFail($id);
-            
-            $validated = $request->validate([
-               'title' => 'required|string',
-                'author' => 'required|string',
-                'isbn' => 'required|string|unique:books',
-                'category' => 'required|string',
-                'published_year' => 'required|numeric',
-            ]);
-        
-            $book->update($validated);
-        
-            return redirect()->route('books.show', $book->id)->with('success', 'Book updated successfully!');
-        }
-
         public function edit($id)
         {
             $book = Books::findOrFail($id);
             return view('bookManage.editBooks', compact('book'));
-
+        }
+    
+        public function update(Request $request, $id)
+        {
+            $book = Books::findOrFail($id);
+    
+            // Validate request
+            $validated = $request->validate([
+                'title' => 'required|string',
+                'author' => 'required|string',
+                'isbn' => 'required|string|unique:books,isbn,'.$id, // Allow existing ISBN
+                'published_year' => 'required|numeric',
+            ]);
+    
+            // Update book details
+            $book->update($validated);
+    
+            return redirect()->route('dashboard', $book->id)->with('success', 'Book updated successfully!');
         }
 
         // Delete a book
@@ -104,7 +113,22 @@ class BooksController extends Controller
             $book = Books::findOrFail($id); // Find the book
             return view('borrowBook.return', compact('book')); // Load return.blade.php
         }
+
         public function returnBook($id)
+        {
+            // Find the latest borrow record for the book
+            $borrow = Borrow::where('bookid', $id)->latest()->first(); 
+        
+            if ($borrow) {
+                // Mark the borrow record as returned
+                $borrow->status = 'returned'; // Adjust the status based on your system
+                $borrow->save();
+            }
+        
+            return redirect()->route('books.return', ['id' => $id])->with('success', 'Book returned successfully.');
+        }
+
+        /*public function returnBook($id)
         {
             $book = Books::findOrFail($id);
         
@@ -115,5 +139,5 @@ class BooksController extends Controller
             $book->save();
         
             return redirect()->route('books.index')->with('success', 'Book returned successfully.');
-        }
+        }*/
 }

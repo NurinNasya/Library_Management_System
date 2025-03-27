@@ -11,20 +11,119 @@ class BorrowController extends Controller
 {
     public function index()
     {
-        // Ensure pagination is applied
-        $books = Books::paginate(10); // Adjust the number per page as needed
-    
+
+        // Fetch books and include only active borrow records
+        $books = Books::with(['borrow' => function ($query) {
+            $query->whereNull('return_date'); // Only fetch active borrow records
+        }])->paginate(10); // Adjust per page
+
         return view('borrowBook.mainBorrow', compact('books'));
+
+        // Ensure pagination is applied
+        /*$books = Books::paginate(10); // Adjust the number per page as needed
+    
+        return view('borrowBook.mainBorrow', compact('books'));*/
     }
 
-    public function index2()
+    public function index2(Request $request)
+        {
+            $query = Books::leftJoin('borrows', 'books.id', '=', 'borrows.bookid')
+                ->select('books.*', 'borrows.status');
+
+            if ($request->has('search')) {
+                $query->where('books.title', 'like', '%' . $request->search . '%')
+                    ->orWhere('books.author', 'like', '%' . $request->search . '%');
+            }
+
+            $books = $query->paginate(10); // Adjust pagination as needed
+
+            return view('borrowBook.mainborrow', compact('books'));
+        }
+
+        public function showBorrowForm(Request $request)
+        {
+            $bookid = $request->query('bookid'); 
+            $book = Books::find($bookid);
+
+            if (!$book) {
+                return redirect()->route('borrow.index')->with('error', 'Book not found.');
+            }
+
+            return view('borrowBook.borrow', compact('book')); 
+        }
+
+
+    public function store(Request $request)
+    {
+                // Debugging: Check what data is being received
+                //\Log::info('Borrow Request Data:', $request->all());
+
+                // Validate input
+                $validated = $request->validate([
+                    'bookid' => 'required|exists:books,id',
+                    'borrower_name' => 'required|string|max:255',
+                ]);
+        
+                // Check if book is already borrowed
+                $existingBorrow = Borrow::where('bookid', $validated['bookid'])
+                    ->whereNull('return_date')
+                    ->first();
+        
+                if ($existingBorrow) {
+                    return back()->with('error', 'This book is already borrowed!');
+                }
+        
+                // Create the borrow record
+                Borrow::create([
+                    'bookid' => $validated['bookid'],
+                    'borrower_name' => $validated['borrower_name'],
+                    'borrower_date' => now(),
+                    'return_date' => null,
+                    'status' => 'Borrowed',
+                ]);
+
+        
+                return redirect()->route('borrow.index')->with('success', 'Book borrowed successfully!');
+        
+        // Check if book is already borrowed
+        /*$existingBorrow = Borrow::where('bookid', $request->bookid)->whereNull('return_date')->first();
+    
+        if ($existingBorrow) {
+            return back()->with('error', 'This book is already borrowed!');
+        }
+    
+        Borrow::create([
+            'bookid' => $request->bookid,
+            'borrower_name' => $request->borrower_name,
+            'borrower_date' => now(),
+            'return_date' => null,
+            'status' => 'Borrowed',
+        ]);
+    
+        return back()->with('success', 'Book borrowed successfully!');*/
+    }
+
+    public function returnBook($id)
+    {
+        $borrow = Borrow::where('bookid', $id)->whereNull('return_date')->firstOrFail();
+        
+        $borrow->update([
+            'return_date' => now(),
+            'status' => 'Available'
+        ]);
+    
+        return redirect()->route('borrow.main')->with('success', 'Book returned successfully!');
+
+    }
+    
+    /*public function index2() <--original
     {
         $books = Books::leftJoin('borrows', 'books.id', '=', 'borrows.bookid')
             ->select('books.*', 'borrows.status')
             ->get();
 
         return view('borrowBook.mainborrow', compact('books'));
-    }
+    }*
 
 
     public function store(Request $request)
@@ -38,7 +137,7 @@ class BorrowController extends Controller
         ]);
     
         return back()->with('success', 'Book borrowed successfully!');
-    }
+    }*
 
     public function returnBook($id)
 {
@@ -49,7 +148,7 @@ class BorrowController extends Controller
     ]);
 
     return back()->with('success', 'Book returned successfully!');
-}
+}*/ //original
 
     
     /*public function borrow($id)

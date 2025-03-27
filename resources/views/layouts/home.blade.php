@@ -88,10 +88,16 @@
 
 <div class="sidebar">
     <h2>E-LIBRARY</h2>
-   <a href="{{ route('displayBooks') }}" class="{{ Request::routeIs('displayBooks') ? 'active' : '' }}">Dashboard</a>
+   {{--<a href="{{ route('displayBooks') }}" class="{{ Request::routeIs('displayBooks') ? 'active' : '' }}">Dashboard</a>--}}
     <a href="{{ route('dashboard') }}" class="{{ Request::routeIs('dashboard') ? 'active' : '' }}">Books</a>
     <a href="{{ route('mainborrow') }}" class="{{ Request::routeIs('mainborrow') ? 'active' : '' }}">Borrow/Return</a>
+    <form action="{{ route('logout') }}" method="POST" style="margin: 20px;">
+    @csrf
+    <button type="submit" class="btn btn-light text-dark border w-100">Logout</button>
+</form>
 </div>
+
+
 
 <div class="content">
     @yield('content')  <!-- This will display content from child views -->

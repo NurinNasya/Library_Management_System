@@ -8,6 +8,10 @@ use App\Http\Controllers\BorrowController;
 Route::get('/', function () {
     return redirect('/login'); // Redirect to login page on startup
 });
+Route::post('/logout', function () {
+    session()->flush(); // Clears all session data
+    return redirect('/login')->with('success', 'Logged out successfully!');
+})->name('logout');
 
 Route::get('/login', function () {
     return view('auth.login'); // Ensure this file exists
@@ -49,12 +53,18 @@ Route::get('/books/{id}', [BooksController::class, 'show'])->name('books.show');
 Route::get('/books/{id}/edit', [BooksController::class, 'edit'])->name('books.edit');
 Route::put('/books/{id}', [BooksController::class, 'update'])->name('books.update');
 Route::delete('/books/{id}', [BooksController::class, 'destroy'])->name('books.destroy'); // Delete a book
+Route::get('/book-dashboard', [BooksController::class, 'dashboard'])->name('book-dashboard');
 
-//book return
+//book borrow return
 Route::get('/borrow', [BorrowController::class, 'index2'])->name('borrow.index');
-Route::post('/borrow/store', [BorrowController::class, 'store'])->name('borrow.book');
+Route::get('/borrow/form', [BorrowController::class, 'showBorrowForm'])->name('borrow.form');
+Route::post('/borrow/{bookid}', [BorrowController::class, 'store'])->name('borrow.store');
+//Route::post('/borrow/store', [BorrowController::class, 'store'])->name('borrow.book');
 //Route::get('/books/return', [BooksController::class, 'returnBook'])->name('books.return');
 Route::get('/books/{id}/return', [BooksController::class, 'showReturnForm'])->name('books.return.view'); 
 Route::put('/books/{id}/return', [BooksController::class, 'returnBook'])->name('books.return');
+Route::get('/borrow/main', [BorrowController::class, 'index'])->name('borrow.main');
+
+
 
 
